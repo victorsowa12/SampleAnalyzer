@@ -1,8 +1,8 @@
-#include "SimpleSerialAnalyzer.h"
-#include "SimpleSerialAnalyzerSettings.h"
+#include "SDI12Analyzer.h"
+#include "SDI12AnalyzerSettings.h"
 #include <AnalyzerChannelData.h>
 
-SimpleSerialAnalyzer::SimpleSerialAnalyzer()
+SDI12Analyzer::SDI12Analyzer()
 :	Analyzer2(),  
 	mSettings(),
 	mSimulationInitilized( false )
@@ -10,20 +10,20 @@ SimpleSerialAnalyzer::SimpleSerialAnalyzer()
 	SetAnalyzerSettings( &mSettings );
 }
 
-SimpleSerialAnalyzer::~SimpleSerialAnalyzer()
+SDI12Analyzer::~SDI12Analyzer()
 {
 	KillThread();
 }
 
-void SimpleSerialAnalyzer::SetupResults()
+void SDI12Analyzer::SetupResults()
 {
 	// SetupResults is called each time the analyzer is run. Because the same instance can be used for multiple runs, we need to clear the results each time.
-	mResults.reset(new SimpleSerialAnalyzerResults( this, &mSettings ));
+	mResults.reset(new SDI12AnalyzerResults( this, &mSettings ));
 	SetAnalyzerResults( mResults.get() );
 	mResults->AddChannelBubblesWillAppearOn( mSettings.mInputChannel );
 }
 
-void SimpleSerialAnalyzer::WorkerThread()
+void SDI12Analyzer::WorkerThread()
 {
 	mSampleRateHz = GetSampleRate();
 
@@ -73,12 +73,12 @@ void SimpleSerialAnalyzer::WorkerThread()
 	}
 }
 
-bool SimpleSerialAnalyzer::NeedsRerun()
+bool SDI12Analyzer::NeedsRerun()
 {
 	return false;
 }
 
-U32 SimpleSerialAnalyzer::GenerateSimulationData( U64 minimum_sample_index, U32 device_sample_rate, SimulationChannelDescriptor** simulation_channels )
+U32 SDI12Analyzer::GenerateSimulationData( U64 minimum_sample_index, U32 device_sample_rate, SimulationChannelDescriptor** simulation_channels )
 {
 	if( mSimulationInitilized == false )
 	{
@@ -89,24 +89,24 @@ U32 SimpleSerialAnalyzer::GenerateSimulationData( U64 minimum_sample_index, U32 
 	return mSimulationDataGenerator.GenerateSimulationData( minimum_sample_index, device_sample_rate, simulation_channels );
 }
 
-U32 SimpleSerialAnalyzer::GetMinimumSampleRateHz()
+U32 SDI12Analyzer::GetMinimumSampleRateHz()
 {
 	return mSettings.mBitRate * 4;
 }
 
-const char* SimpleSerialAnalyzer::GetAnalyzerName() const
+const char* SDI12Analyzer::GetAnalyzerName() const
 {
-	return "Simple Serial";
+	return "SDI12 Analyzer";
 }
 
 const char* GetAnalyzerName()
 {
-	return "Simple Serial";
+	return "SDI12 Analyzer";
 }
 
 Analyzer* CreateAnalyzer()
 {
-	return new SimpleSerialAnalyzer();
+	return new SDI12Analyzer();
 }
 
 void DestroyAnalyzer( Analyzer* analyzer )
