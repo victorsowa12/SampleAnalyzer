@@ -15,13 +15,17 @@ public:
 	virtual void LoadSettings( const char* settings );
 	virtual const char* SaveSettings();
 
-	
+
 	Channel mInputChannel;
 	U32 mBitRate;
+	U32 mBreakMs;
+	U32 mMarkingMs;
 
 protected:
 	AnalyzerSettingInterfaceChannel	mInputChannelInterface;
 	AnalyzerSettingInterfaceInteger	mBitRateInterface;
+	AnalyzerSettingInterfaceInteger	mBreakMsInterface;
+	AnalyzerSettingInterfaceInteger	mMarkingMsInterface;
 };
 
 #endif //SDI12_ANALYZER_SETTINGS
