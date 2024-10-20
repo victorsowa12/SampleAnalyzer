@@ -1,6 +1,7 @@
 #include "SDI12Analyzer.h"
 #include "SDI12AnalyzerSettings.h"
 #include <AnalyzerChannelData.h>
+#include <AnalyzerHelpers.h>
 
 SDI12Analyzer::SDI12Analyzer()
 :	Analyzer2(),
@@ -34,7 +35,7 @@ void SDI12Analyzer::WorkerThread()
 
 	U32 samples_per_bit = mSampleRateHz / mSettings.mBitRate;
 	U32 samples_to_first_center_of_first_data_bit = U32( 1.5 * double( mSampleRateHz ) / double( mSettings.mBitRate ) );
-	U32 samples_from_end_of_break_to_end_of_marking_periods = U32( double( mSampleRateHz ) * double( mSettings.mMarkingPeriodMs ) );
+	U32 samples_from_end_of_break_to_end_of_marking_periods = U32( double( mSampleRateHz ) * double( mSettings.mMarkingPeriodMs ) / 1000.0 );
 
 	for( ; ; )
 	{
@@ -48,7 +49,8 @@ void SDI12Analyzer::WorkerThread()
 		U64 break_start_sample = mSerial->GetSampleNumber();
 		U64 break_end_sample = mSerial->GetSampleOfNextEdge();
 		// Check to see if this is a break period
-		if ((double(break_end_sample) - double(break_start_sample)) / double(mSampleRateHz) < mSettings.mBreakPeriodMs)
+		double break_period_ms = 1000.0 * double(break_end_sample - break_start_sample) / double(mSampleRateHz);
+		if (fabs(break_period_ms - mSettings.mBreakPeriodMs) <= 0.4)
 		{
 			mSerial->AdvanceToNextEdge(); //falling edge -- to the end of the break period
 			// we just got a break period so lets save a break frame!
@@ -62,8 +64,8 @@ void SDI12Analyzer::WorkerThread()
 			mResults->CommitResults();
 			ReportProgress( break_frame.mEndingSampleInclusive );
 
-			// Now there is the marking period, so lets advance by the number of samples in the marking period
-			mSerial->Advance(samples_from_end_of_break_to_end_of_marking_periods);
+			// Now there is the marking period, so lets advance to the next edge (aka to the start of the start bit)
+			mSerial->AdvanceToNextEdge();
 			// And lets save a marking frame!
 			Frame marking_frame;
 			marking_frame.mType = MarkingPeriodFT;
@@ -98,45 +100,46 @@ void SDI12Analyzer::WorkerThread()
 
 		// Now we have to deal with the parity bit
 		// There is one parity bit, so we can advance by one bit
+		// SDI12 uses even parity so ne need to check if it is even/odd parity
 		parity_error = false;
-		mSerial->Advance( samples_per_bit );
 		bool is_even = AnalyzerHelpers::IsEven( AnalyzerHelpers::GetOnesCount( data ) );
-
-		if( mSettings->mParity == AnalyzerEnums::Even )
+		if( is_even == true )
 		{
-				if( is_even == true )
-				{
-						if( mSerial->GetBitState() != BIT_HIGH ) // we expect a high bit, to keep the parity even.
-								parity_error = true;
-				}
-				else
-				{
-						if( mSerial->GetBitState() != BIT_LOW ) // we expect a low bit, to force parity even.
-								parity_error = true;
-				}
-				mResults->AddMarker( mSerial->GetSampleNumber(), AnalyzerResults::Square, mSettings->mInputChannel );
+				if( mSerial->GetBitState() != BIT_HIGH ) // we expect a high bit, to keep the parity even.
+						parity_error = true;
 		}
+		else
+		{
+				if( mSerial->GetBitState() != BIT_LOW ) // we expect a low bit, to force parity even.
+						parity_error = true;
+		}
+		mResults->AddMarker( mSerial->GetSampleNumber(), AnalyzerResults::Square, mSettings.mInputChannel );
 
 		// now we must determine if there is a framing error.
 		framing_error = false;
-		mSerial->Advance( samples_per_bit ); //advance to the center of the stop bit
+		mSerial->Advance( samples_per_bit / 2 );
+		U64 end_of_sample = 0;
 		if( mSerial->GetBitState() != BIT_LOW )
 		{
 				framing_error = true;
 		}
 		else
 		{
-				U32 num_edges = mSerial->Advance( mEndOfStopBitOffset );
+				U32 num_edges = mSerial->Advance( samples_per_bit / 2 ); // Advance to the end of the stop bit
+				end_of_sample = mSerial->GetSampleNumber();
 				if( num_edges != 0 )
 						framing_error = true;
 		}
 
 		if( framing_error == true )
 		{
-				mResults->AddMarker( mSerial->GetSampleNumber(), AnalyzerResults::ErrorX, mSettings->mInputChannel );
+				mResults->AddMarker( mSerial->GetSampleNumber(), AnalyzerResults::ErrorX, mSettings.mInputChannel );
 
 		}
-
+		else
+		{
+				mResults->AddMarker( mSerial->GetSampleNumber(), AnalyzerResults::Stop, mSettings.mInputChannel );
+		}
 
 		//we have a byte to save.
 		Frame frame;
@@ -144,11 +147,13 @@ void SDI12Analyzer::WorkerThread()
 		frame.mData1 = data;
 		frame.mFlags = 0;
 		frame.mStartingSampleInclusive = starting_sample;
-		frame.mEndingSampleInclusive = mSerial->GetSampleNumber();
+		frame.mEndingSampleInclusive = end_of_sample;
 
 		mResults->AddFrame( frame );
 		mResults->CommitResults();
 		ReportProgress( frame.mEndingSampleInclusive );
+
+		mSerial->AdvanceToNextEdge(); //Go to the next high edge - may be the start of the next break period or the next start bit
 
 	}
 }

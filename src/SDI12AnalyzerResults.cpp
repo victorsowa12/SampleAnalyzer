@@ -20,10 +20,24 @@ void SDI12AnalyzerResults::GenerateBubbleText( U64 frame_index, Channel& channel
 {
 	ClearResultStrings();
 	Frame frame = GetFrame( frame_index );
-
-	char number_str[128];
-	AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 8, number_str, 128 );
-	AddResultString( number_str );
+	if (frame.mType == BreakPeriodFT)
+	{
+		AddResultString("Break Period");
+	}
+	else if (frame.mType == MarkingPeriodFT)
+	{
+		AddResultString("Marking Period");
+	}
+	else if (frame.mType == DataFT)
+	{
+		char number_str[128];
+		AnalyzerHelpers::GetNumberString( frame.mData1, display_base, 8, number_str, 128 );
+		AddResultString(number_str);
+	}
+	else
+	{
+		AddResultString("Unknown Frame Type");
+	}
 }
 
 void SDI12AnalyzerResults::GenerateExportFile( const char* file, DisplayBase display_base, U32 export_type_user_id )
@@ -39,7 +53,7 @@ void SDI12AnalyzerResults::GenerateExportFile( const char* file, DisplayBase dis
 	for( U32 i=0; i < num_frames; i++ )
 	{
 		Frame frame = GetFrame( i );
-		
+
 		char time_str[128];
 		AnalyzerHelpers::GetTimeString( frame.mStartingSampleInclusive, trigger_sample, sample_rate, time_str, 128 );
 
