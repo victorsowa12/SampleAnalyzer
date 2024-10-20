@@ -3,7 +3,7 @@
 
 #include <AnalyzerResults.h>
 
-enum SDI12FrameType { BreakPeriod, MarkingPeriod, Data };\
+enum SDI12FrameType { BreakPeriodFT, MarkingPeriodFT, DataFT };
 
 class SDI12Analyzer;
 class SDI12AnalyzerSettings;

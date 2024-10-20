@@ -120,7 +120,7 @@ void SDI12Analyzer::WorkerThread()
 		// now we must determine if there is a framing error.
 		framing_error = false;
 		mSerial->Advance( samples_per_bit ); //advance to the center of the stop bit
-		if( mSerial->GetBitState() != mBitHigh )
+		if( mSerial->GetBitState() != BIT_LOW )
 		{
 				framing_error = true;
 		}
