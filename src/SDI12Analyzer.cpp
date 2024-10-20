@@ -3,7 +3,7 @@
 #include <AnalyzerChannelData.h>
 
 SDI12Analyzer::SDI12Analyzer()
-:	Analyzer2(),  
+:	Analyzer2(),
 	mSettings(),
 	mSimulationInitilized( false )
 {
@@ -34,34 +34,113 @@ void SDI12Analyzer::WorkerThread()
 
 	U32 samples_per_bit = mSampleRateHz / mSettings.mBitRate;
 	U32 samples_to_first_center_of_first_data_bit = U32( 1.5 * double( mSampleRateHz ) / double( mSettings.mBitRate ) );
+	U32 samples_from_end_of_break_to_end_of_marking_periods = U32( double( mSampleRateHz ) * double( mSettings.mMarkingPeriodMs ) );
 
 	for( ; ; )
 	{
+		bool parity_error = false;
+		bool framing_error = false;
 		U8 data = 0;
-		U8 mask = 1 << 7;
-		
-		mSerial->AdvanceToNextEdge(); //falling edge -- beginning of the start bit
+		// SDI12 is LSB first so we will start the mask with the least significant bit
+		U8 mask = 0x01;
+
+		// We need to see if we have a break period on our hands
+		U64 break_start_sample = mSerial->GetSampleNumber();
+		U64 break_end_sample = mSerial->GetSampleOfNextEdge();
+		// Check to see if this is a break period
+		if ((double(break_end_sample) - double(break_start_sample)) / double(mSampleRateHz) < mSettings.mBreakPeriodMs)
+		{
+			mSerial->AdvanceToNextEdge(); //falling edge -- to the end of the break period
+			// we just got a break period so lets save a break frame!
+			Frame break_frame;
+			break_frame.mType = BreakPeriodFT;
+			break_frame.mFlags = 0;
+			break_frame.mStartingSampleInclusive = break_start_sample;
+			break_frame.mEndingSampleInclusive = break_end_sample;
+
+			mResults->AddFrame( break_frame );
+			mResults->CommitResults();
+			ReportProgress( break_frame.mEndingSampleInclusive );
+
+			// Now there is the marking period, so lets advance by the number of samples in the marking period
+			mSerial->Advance(samples_from_end_of_break_to_end_of_marking_periods);
+			// And lets save a marking frame!
+			Frame marking_frame;
+			marking_frame.mType = MarkingPeriodFT;
+			marking_frame.mFlags = 0;
+			marking_frame.mStartingSampleInclusive = break_end_sample;
+			marking_frame.mEndingSampleInclusive = mSerial->GetSampleNumber();
+
+			mResults->AddFrame( marking_frame );
+			mResults->CommitResults();
+			ReportProgress( marking_frame.mEndingSampleInclusive );
+		}
 
 		U64 starting_sample = mSerial->GetSampleNumber();
 
 		mSerial->Advance( samples_to_first_center_of_first_data_bit );
 
-		for( U32 i=0; i<8; i++ )
+		// SDI12 has only 7 data bits
+		for( U32 i=0; i<7; i++ )
 		{
 			//let's put a dot exactly where we sample this bit:
 			mResults->AddMarker( mSerial->GetSampleNumber(), AnalyzerResults::Dot, mSettings.mInputChannel );
 
-			if( mSerial->GetBitState() == BIT_HIGH )
+			// SDI12 is inverted, so we will record a 1 when the line is low
+			if( mSerial->GetBitState() == BIT_LOW )
 				data |= mask;
 
 			mSerial->Advance( samples_per_bit );
 
-			mask = mask >> 1;
+			// Since it is LSB first we need to shift the mask to the left
+			mask = mask << 1;
+		}
+
+		// Now we have to deal with the parity bit
+		// There is one parity bit, so we can advance by one bit
+		parity_error = false;
+		mSerial->Advance( samples_per_bit );
+		bool is_even = AnalyzerHelpers::IsEven( AnalyzerHelpers::GetOnesCount( data ) );
+
+		if( mSettings->mParity == AnalyzerEnums::Even )
+		{
+				if( is_even == true )
+				{
+						if( mSerial->GetBitState() != BIT_HIGH ) // we expect a high bit, to keep the parity even.
+								parity_error = true;
+				}
+				else
+				{
+						if( mSerial->GetBitState() != BIT_LOW ) // we expect a low bit, to force parity even.
+								parity_error = true;
+				}
+				mResults->AddMarker( mSerial->GetSampleNumber(), AnalyzerResults::Square, mSettings->mInputChannel );
+		}
+
+		// now we must determine if there is a framing error.
+		framing_error = false;
+		mSerial->Advance( samples_per_bit ); //advance to the center of the stop bit
+		if( mSerial->GetBitState() != mBitHigh )
+		{
+				framing_error = true;
+		}
+		else
+		{
+				U32 num_edges = mSerial->Advance( mEndOfStopBitOffset );
+				if( num_edges != 0 )
+						framing_error = true;
+		}
+
+		if( framing_error == true )
+		{
+				mResults->AddMarker( mSerial->GetSampleNumber(), AnalyzerResults::ErrorX, mSettings->mInputChannel );
+
 		}
 
 
-		//we have a byte to save. 
+		//we have a byte to save.
 		Frame frame;
+		frame.mType = DataFT;
 		frame.mData1 = data;
 		frame.mFlags = 0;
 		frame.mStartingSampleInclusive = starting_sample;
@@ -70,6 +149,7 @@ void SDI12Analyzer::WorkerThread()
 		mResults->AddFrame( frame );
 		mResults->CommitResults();
 		ReportProgress( frame.mEndingSampleInclusive );
+
 	}
 }
 

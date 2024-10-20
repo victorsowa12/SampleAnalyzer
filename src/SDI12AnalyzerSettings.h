@@ -18,8 +18,8 @@ public:
 
 	Channel mInputChannel;
 	U32 mBitRate;
-	U32 mBreakMs;
-	U32 mMarkingMs;
+	U32 mBreakPeriodMs;
+	U32 mMarkingPeriodMs;
 
 protected:
 	AnalyzerSettingInterfaceChannel	mInputChannelInterface;

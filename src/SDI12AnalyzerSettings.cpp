@@ -5,8 +5,8 @@
 SDI12AnalyzerSettings::SDI12AnalyzerSettings()
 :	mInputChannel( UNDEFINED_CHANNEL ),
 	mBitRate( 1200 ),
-	mBreakMs( 12 ),
-	mMarkingMs( 9 ),
+	mBreakPeriodMs( 12 ),
+	mMarkingPeriodMs( 9 ),
 	mInputChannelInterface(),
 	mBitRateInterface(),
 	mBreakMsInterface(),
@@ -23,12 +23,12 @@ SDI12AnalyzerSettings::SDI12AnalyzerSettings()
 	mBreakMsInterface.SetTitleAndTooltip( "Break Time (ms)", "Specify the break time in milliseconds." );
 	mBreakMsInterface.SetMax( 100 );
 	mBreakMsInterface.SetMin( 12 );
-	mBreakMsInterface.SetInteger( mBreakMs );
+	mBreakMsInterface.SetInteger( mBreakPeriodMs );
 
 	mMarkingMsInterface.SetTitleAndTooltip( "Marking Time (ms)", "Specify the marking time in milliseconds." );
 	mMarkingMsInterface.SetMax( 100 );
 	mMarkingMsInterface.SetMin( 9 );
-	mMarkingMsInterface.SetInteger( mMarkingMs );
+	mMarkingMsInterface.SetInteger( mMarkingPeriodMs );
 
 	AddInterface( &mInputChannelInterface );
 	AddInterface( &mBitRateInterface );
@@ -51,8 +51,8 @@ bool SDI12AnalyzerSettings::SetSettingsFromInterfaces()
 {
 	mInputChannel = mInputChannelInterface.GetChannel();
 	mBitRate = mBitRateInterface.GetInteger();
-	mBreakMs = mBreakMsInterface.GetInteger();
-	mMarkingMs = mMarkingMsInterface.GetInteger();
+	mBreakPeriodMs = mBreakMsInterface.GetInteger();
+	mMarkingPeriodMs = mMarkingMsInterface.GetInteger();
 
 	ClearChannels();
 	AddChannel( mInputChannel, "SDI12 Analyzer", true );
@@ -64,8 +64,8 @@ void SDI12AnalyzerSettings::UpdateInterfacesFromSettings()
 {
 	mInputChannelInterface.SetChannel( mInputChannel );
 	mBitRateInterface.SetInteger( mBitRate );
-	mBreakMsInterface.SetInteger( mBreakMS );
-	mMarkingMsInterface.SetInteger( mMarkingMS );
+	mBreakMsInterface.SetInteger( mBreakPeriodMs );
+	mMarkingMsInterface.SetInteger( mMarkingPeriodMs );
 }
 
 void SDI12AnalyzerSettings::LoadSettings( const char* settings )
@@ -75,8 +75,8 @@ void SDI12AnalyzerSettings::LoadSettings( const char* settings )
 
 	text_archive >> mInputChannel;
 	text_archive >> mBitRate;
-	text_archive >> mBreakMs;
-	text_archive >> mMarkingMs;
+	text_archive >> mBreakPeriodMs;
+	text_archive >> mMarkingPeriodMs;
 
 	ClearChannels();
 	AddChannel( mInputChannel, "SDI12 Analyzer", true );
@@ -90,8 +90,8 @@ const char* SDI12AnalyzerSettings::SaveSettings()
 
 	text_archive << mInputChannel;
 	text_archive << mBitRate;
-	text_archive << mBreakMs;
-	text_archive << mMarkingMs;
+	text_archive << mBreakPeriodMs;
+	text_archive << mMarkingPeriodMs;
 
 	return SetReturnString( text_archive.GetString() );
 }
