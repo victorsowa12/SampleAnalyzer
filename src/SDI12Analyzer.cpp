@@ -117,18 +117,10 @@ void SDI12Analyzer::WorkerThread()
 
 		// now we must determine if there is a framing error.
 		framing_error = false;
-		mSerial->Advance( samples_per_bit / 2 );
-		U64 end_of_sample = 0;
+		mSerial->Advance( samples_per_bit );
 		if( mSerial->GetBitState() != BIT_LOW )
 		{
 				framing_error = true;
-		}
-		else
-		{
-				U32 num_edges = mSerial->Advance( samples_per_bit / 2 ); // Advance to the end of the stop bit
-				end_of_sample = mSerial->GetSampleNumber();
-				if( num_edges != 0 )
-						framing_error = true;
 		}
 
 		if( framing_error == true )
@@ -140,6 +132,9 @@ void SDI12Analyzer::WorkerThread()
 		{
 				mResults->AddMarker( mSerial->GetSampleNumber(), AnalyzerResults::Stop, mSettings.mInputChannel );
 		}
+
+		mSerial->Advance( samples_per_bit / 2 ); // Advance to the end of the stop bit
+		U64 end_of_sample = mSerial->GetSampleNumber();
 
 		//we have a byte to save.
 		Frame frame;
