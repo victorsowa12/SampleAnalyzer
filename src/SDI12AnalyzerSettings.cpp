@@ -50,7 +50,7 @@ SDI12AnalyzerSettings::~SDI12AnalyzerSettings()
 bool SDI12AnalyzerSettings::SetSettingsFromInterfaces()
 {
 	mInputChannel = mInputChannelInterface.GetChannel();
-	mBitRate = mBitRateInterface.GetInteger();
+	mBitRate = 1200; // SDI-12 is always 1200bps
 	mBreakPeriodMs = mBreakMsInterface.GetInteger();
 	mMarkingPeriodMs = mMarkingMsInterface.GetInteger();
 
@@ -63,7 +63,6 @@ bool SDI12AnalyzerSettings::SetSettingsFromInterfaces()
 void SDI12AnalyzerSettings::UpdateInterfacesFromSettings()
 {
 	mInputChannelInterface.SetChannel( mInputChannel );
-	mBitRateInterface.SetInteger( mBitRate );
 	mBreakMsInterface.SetInteger( mBreakPeriodMs );
 	mMarkingMsInterface.SetInteger( mMarkingPeriodMs );
 }

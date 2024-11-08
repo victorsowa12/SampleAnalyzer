@@ -152,11 +152,11 @@ This will always include at least one variable of the type ```Channel``` so the 
 - Bit ordering (MSb first, LSb first)
 - Clock edge (rising, falling) to use
 - Enable line polarity
-- Etc – anything you need for your specific protocol. 
+- Etc – anything you need for your specific protocol.
 
 Start with just the ```Channel``` variable(s), and you can add more later to make your analyzer more flexible.
 
-The variable types can be whatever you like: 
+The variable types can be whatever you like:
 ```c++
 std::string, double, int, enum, etc...
 ```
@@ -181,7 +181,7 @@ First, initialize all your settings variables to their default values.  Second, 
 ### Setting up each AnalyzerSettingInterface object
 
 First, call the member function ```SetTitleAndTooltip()```. The title will appear to the left of the input element. Note that often times you won’t need a title, but you should use one for ```Channels```. The tooltip shows up when hovering over the input element.
-```c++    
+```c++
 void SetTitleAndTooltip( const char* title, const char* tooltip );
 mInputChannelInterface.SetTitleAndTooltip( "Serial", "Standard Async Serial" );
 ```
@@ -200,38 +200,38 @@ We’ll want to specify the allowable options. This depends on the type of inter
 
 ##### ```AnalyzerSettingInterfaceChannel```
 Some channels can be optional , but typically they are not. By default, the user must select a channel.
-```c++    
+```c++
 void SetSelectionOfNoneIsAllowed( bool is_allowed );
 ```
 ##### ```AnalyzerSettingInterfaceNumberList```
 Call AddNumber for every item you want in the dropdown. ```number``` is the value associated with the selection; it is not displayed to the user.
-```c++    
+```c++
 void AddNumber( double number, const char* str, const char* tooltip );
 ```
 ##### ```AnalyzerSettingInterfaceInteger```
 You can set the allowable range for the integer the user can enter.
-```c++    
+```c++
 void SetMax( int max );
 void SetMin( int min );
 ```
 ##### ```AnalyzerSettingInterfaceText```
 By default, this interface just provides a simple textbox for the user to enter text, but you can also specify that the text should be a path, which will cause a browse button to appear. The options are ```NormalText```, ```FilePath```, or ```FolderPath```.
-```c++    
+```c++
 void SetTextType( TextType text_type );
 ```
 ##### ```AnalyzerSettingInterfaceBool```
-There are only two allowable options for the bool interface (checkbox).  
-```c++    
+There are only two allowable options for the bool interface (checkbox).
+```c++
 void AddNumber( double number, const char* str, const char* tooltip );
 ```
 After creating our interfaces (with ```new```), giving them a titles, settings their values, and specifying their allowed options, we need to expose them to the API. We do that with function AddInterface.
-```c++    
+```c++
 void AddInterface( AnalyzerSettingInterface* analyzer_setting_interface );
 ```
 ### Specifying Export Options
 
 Analyzers can offer more than one export type. For example txt or csv, or even a wav file or bitmap. If these need special settings, they can be specified as analyzer variables/interfaces as we’ve discussed.
-```c++    
+```c++
 void AddExportOption( U32 user_id, const char* menu_text );
 void AddExportExtension( U32 user_id, const char * extension_description, const char *extension );
 ```
@@ -275,7 +275,7 @@ values in the interfaces to your settings variables – use temporary variables 
 void SetErrorText( const char* error_text );
 ```
 
-For example, when using more than one channel, you would typically want to make sure that all the channels are different. You can use the ```AnalyzerHelpers::DoChannelsOverlap``` function to make that easier if you like.  
+For example, when using more than one channel, you would typically want to make sure that all the channels are different. You can use the ```AnalyzerHelpers::DoChannelsOverlap``` function to make that easier if you like.
 
 For your analyzer, it’s quite possible that all possible user selections are valid. In that case you can
 ignore the above.
@@ -468,7 +468,7 @@ public:
   U8 mType;
   U8 mFlags;
 };
-```    
+```
 
 #### Frame Member Variables
 
